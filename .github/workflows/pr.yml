@@ -1,0 +1,52 @@
+name: Pull Request Checks
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    name: Build on JDK ${{ matrix.java_version }} [${{ matrix.expander_leg }}]
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - java_version: 21
+          os: macos-latest
+          arch: arm64
+          runner: macos-latest
+          expander_leg: macos-latest-21-arm64
+    env:
+      JAVA_OPTS: "-XX:+TieredCompilation -XX:TieredStopAtLevel=1"
+    steps:
+    - uses: actions/checkout@v7
+    - name: Set up JDK
+      uses: actions/setup-java@v5
+      with:
+        distribution: 'zulu'
+        java-version: ${{ matrix.java_version }}
+          # Zulu publishes no native Windows ARM64 build of JDK 8, so we install the x64 build.
+          # Windows 11 on ARM runs it through x64 emulation. On every other leg this is empty,
+          # so setup-java keeps using the runner's own architecture.
+        architecture: ${{ (matrix.os == 'windows-latest' && matrix.arch == 
+          'arm64' && matrix.java_version == 8) && 'x64' || '' }}
+        cache: 'maven'
+    - name: Cache SonarCloud packages
+      uses: actions/cache@v6
+      if: ${{ env.SONAR_TOKEN != null && env.SONAR_TOKEN != '' && 
+        matrix.java_version == '17' }}
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      with:
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
+        restore-keys: ${{ runner.os }}-sonar
+    - name: Run tests
+      run: ./mvnw -V -B -ntp -ff verify
+    - name: Static Analysis (Sonar)
+      if: ${{ env.SONAR_TOKEN != null && env.SONAR_TOKEN != '' && 
+        matrix.java_version == '17' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: ./mvnw -B -ntp -ff 
+        org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+    timeout-minutes: 150
