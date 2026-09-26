@@ -1,0 +1,32 @@
+*.class
+
+.classpath
+.project
+*.iml
+
+# Maven configuration
+.mvn/maven.config
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+target/
+
+# IDE files
+.settings
+.idea
+.vscode
+.mvn/maven.config
+
+# OpenCode
+.opencode/
+
+# Claude Code (personal/local settings; shared config is CLAUDE.md -> AGENTS.md)
+.claude/settings.local.json
